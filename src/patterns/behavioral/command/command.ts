@@ -1,86 +1,95 @@
-// invoker (set, call)
-interface ILightInvoker {
-  setCommand(command: ILightSwitch): void;
-  callCommand(): string;
-}
-
-class LightInvoker implements ILightInvoker {
-  command: ILightSwitch | null;
-
-  constructor(command?: ILightSwitch) {
-    this.command = command ? command : null;
+// Invoker
+class Player {
+  movementCommand: IMovementCommand;
+  constructor(movementCommand: IMovementCommand) {
+    this.movementCommand = movementCommand;
   }
 
-  setCommand(command: ILightSwitch): void {
-    this.command = command;
-  }
-
-  callCommand(): string {
-    return this.command?.execute()!;
+  Move(): PlayerLocation {
+    return this.movementCommand.execute();
   }
 }
 
-// command interface (methods)
-interface ILightSwitch {
-  execute(): string;
-}
-// concrete command (called by the invoker, delegate tasks to the receiver)
-class LightOn implements ILightSwitch {
-  receiver: LightReceiver;
-
-  constructor(receiver: LightReceiver) {
-    this.receiver = receiver;
-  }
-
-  execute(): string {
-    return this.receiver.turnOn();
-  }
+// Command Interface
+interface IMovementCommand {
+  execute(): PlayerLocation;
 }
 
-class LightOff implements ILightSwitch {
-  receiver: LightReceiver;
+// Concrete Commands
+class PlayerLocation {
+  x = 0;
+  y = 0;
+  z = 0;
 
-  constructor(receiver: LightReceiver) {
-    this.receiver = receiver;
-  }
-
-  execute(): string {
-    return this.receiver.turnOff();
+  constructor(x: number, y: number, z: number) {
+    this.x = x;
+    this.y = y;
+    this.z = z;
   }
 }
 
-// receiver (final execution)
-interface ILightReceiver {
-  turnOn(): string;
-  turnOff(): string;
-}
+class MoveCommand implements IMovementCommand {
+  location: PlayerLocation;
+  movementReceiver: MovementReceiver;
+  x: number = 0;
+  z: number = 0;
 
-class LightReceiver {
-  state: boolean;
-
-  constructor(state: boolean) {
-    this.state = state;
+  constructor(
+    location: PlayerLocation,
+    movementReceiver: MovementReceiver,
+    x: number,
+    z: number
+  ) {
+    this.location = location;
+    this.movementReceiver = movementReceiver;
+    this.x = x;
+    this.z = z;
   }
 
-  turnOn(): string {
-    if (this.state) {
-      return "the light bulb is already turned on";
-    }
-
-    this.state = true;
-    return "turned on the light bulb";
-  }
-
-  turnOff(): string {
-    if (!this.state) {
-      return "the light bulb is already turned off";
-    }
-
-    this.state = false;
-    return "turned off the light bult";
+  execute(): PlayerLocation {
+    return this.movementReceiver.movePlayer(this.location, this.x, this.z);
   }
 }
 
-const lightInvoker = new LightInvoker();
-lightInvoker.setCommand(new LightOn(new LightReceiver(false)));
-console.log(lightInvoker.callCommand());
+class JumpCommand implements IMovementCommand {
+  location: PlayerLocation;
+  movementReceiver: MovementReceiver;
+  y: number = 0;
+
+  constructor(
+    location: PlayerLocation,
+    movementReceiver: MovementReceiver,
+    y: number
+  ) {
+    this.location = location;
+    this.movementReceiver = movementReceiver;
+    this.y = y;
+  }
+
+  execute(): PlayerLocation {
+    return this.movementReceiver.jumpPlayer(this.location, this.y);
+  }
+}
+
+// Receivers
+class MovementReceiver {
+  movePlayer(location: PlayerLocation, x: number, z: number): PlayerLocation {
+    location.x += x;
+    location.z += z;
+    return location;
+  }
+
+  jumpPlayer(location: PlayerLocation, y: number): PlayerLocation {
+    location.y += y;
+    return location;
+  }
+}
+
+// Client
+let currentLocation = new PlayerLocation(0, 0, 0);
+let movementReceiver = new MovementReceiver();
+let jumpCommand = new JumpCommand(currentLocation, movementReceiver, 1);
+
+let player = new Player(jumpCommand);
+console.log(player.Move());
+console.log(currentLocation);
